@@ -1,5 +1,10 @@
 ;;; v-spotify.el --- spotify client inside emacs.
 
+;; Copyright (C)
+;; Author: Victor Zeng <https://github.com/victoraugust>
+;; Package: v-spotify
+;; Version: 0.1
+
 ;;; Commentary:
 ;; use Spotify API right inside Emacs.
 ;;; Code:
@@ -8,24 +13,38 @@
 (require 'json)
 (require 'ivy)
 
-(defvar v/sample-href "spotify:track:7bEDDsy2LFC0KSqhZp5nPE")
+;;;;;;;;;;;;;;;
+;; variables ;;
+;;;;;;;;;;;;;;;
 
 (defvar v/spotify-api-url "https://api.spotify.com/v1")
 (defvar v/spotify-api-authentication-url "https://accounts.spotify.com/api/token")
 (defvar v/spotify-client-id "8084cacc042344ef801c0fd2495b9d14")
 (defvar v/spotify-client-secret "faeb0576b5b9415f864ac86a168fce10")
+(defvar v/spotify-auth-token "BQA4V8AxTd4RwRngPMhCfV38p-eykw6hy9F4cvt4upVG6-Lm-u6-XyqdIzel4RwntcwIS1mtZeMJN_nqyXFuGFM16-Je25TtIvBSxxyhvHFppRwFz89TkN8CfGKrCrTKPmVaLTqFoSnCerV8HBdCxE6tlv43Uw")
 
-(defun v/play-spotify-url (trackId)
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; applescript function ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun v/play-spotify-trackId (trackId)
   "Run command to play spotify music with TRACKID."
   (shell-command (format "osascript -e 'tell application %S to play track %S'"
         "Spotify"
         trackId)))
+(defun v/play-spotify-track (track)
+  "Get uri from TRACK."
+  (v/play-spotify-trackId (alist-get 'uri (get-text-property 0 'property track))))
 
-(defun v/generate-spotify-search-url (search-term)
+;;;;;;;;;;;;;;;;;;;;;;
+;; spotify function ;;
+;;;;;;;;;;;;;;;;;;;;;;
+
+(defun v/generate-spotify-track-search-url (search-term)
   "Return a search query from SEARCH-TERM."
   (format "%s/search?q=%s&type=track" v/spotify-api-url search-term))
 
-(defun v/generate-spotify-auth-token ()
+(defun v/generate-spotify-credential-token ()
   "Get Spotify auth token."
   (let ((url-request-method "POST")
       (url-request-data "&grant_type=client_credentials")
@@ -49,18 +68,21 @@
     (goto-char url-http-end-of-headers)
     (json-read))))
 
-
 (defun v/request-spotify-search (url)
   "Generate request call with URL."
-  (let* ((token (v/generate-spotify-auth-token))
+  (let* ((token (v/generate-spotify-credential-token))
        (access-token (cdr token))
        (token-type (car token)))
     (v/request-spotify-search-auth url access-token)))
 
 (defun v/search-track (search-term)
   "Search Spotify with SEARCH-TERM."
-  (let ((url (v/generate-spotify-search-url search-term)))
+  (let ((url (v/generate-spotify-track-search-url search-term)))
     (v/request-spotify-search url)))
+
+;;;;;;;;;;;;;;;;;;;;;
+;; helper function ;;
+;;;;;;;;;;;;;;;;;;;;;
 
 (defun v/helper-alist-get (symbols alist)
   "Look up value for the chain of SYMBOLS in ALIST."
@@ -69,9 +91,9 @@
                           (assoc (car symbols) alist))
     (cdr alist)))
 
-(defun v/play-spotify-track (track)
-  "Get uri from TRACK."
-  (v/play-spotify-url (alist-get 'uri (get-text-property 0 'property track))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ivy related function ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun v/format-track-output (track)
   "Given a TRACK, return a formatted string."
@@ -88,14 +110,17 @@
       '("More input required" . nil)
     (mapcar (lambda (track) (propertize (v/format-track-output track) 'property track))
             (v/helper-alist-get '(tracks items) (v/search-track search-term)))))
-(defun v/ivy-spotify-search ()
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; interface function ;;
+;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun v/ivy-spotify-search-track ()
   "Ivy frontend."
   (interactive)
   (ivy-read "Search track: " #'v/display-formatted-track
             :dynamic-collection t
             :action 'v/play-spotify-track))
-
-(v/ivy-spotify-search)
 
 (provide 'spotify)
 ;;; spotify.el ends here
