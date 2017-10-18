@@ -21,7 +21,7 @@
 (defvar v/spotify-api-authentication-url "https://accounts.spotify.com/api/token")
 (defvar v/spotify-client-id "8084cacc042344ef801c0fd2495b9d14")
 (defvar v/spotify-client-secret "faeb0576b5b9415f864ac86a168fce10")
-(defvar v/spotify-auth-token "BQA4V8AxTd4RwRngPMhCfV38p-eykw6hy9F4cvt4upVG6-Lm-u6-XyqdIzel4RwntcwIS1mtZeMJN_nqyXFuGFM16-Je25TtIvBSxxyhvHFppRwFz89TkN8CfGKrCrTKPmVaLTqFoSnCerV8HBdCxE6tlv43Uw")
+(defvar v/spotify-auth-token "BQBIN2xvZWZgLuKd2UFPaB5VU__HTDUWRS83wwgo2IiCtzL3bh7dPTD-z1-_hp3Akp0lK3Huz1_cison-ZF0UWGr-YQbIthroHbCpclLIWrfS7IgnylBJaWra5SWUb-2ly4pidaXSQXVbf9kqo7Z3Q")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; applescript function ;;
@@ -79,6 +79,18 @@
   "Search Spotify with SEARCH-TERM."
   (let ((url (v/generate-spotify-track-search-url search-term)))
     (v/request-spotify-search url)))
+
+(defvar v/spotify-api-user-tracks-url "https://api.spotify.com/v1/me/tracks")
+(defun v/search-user-saved-tracks ()
+  "Show user's saved tracks."
+  (let ((url-request-method "GET")
+        (url-request-extra-headers
+         `(("Content-Type" . "application/x-www-form-urlencoded")
+           ("Authorization" . ,(concat "Bearer " v/spotify-auth-token)))))
+    (with-current-buffer
+        (url-retrieve-synchronously v/spotify-api-user-tracks-url)
+      (goto-char url-http-end-of-headers)
+      (json-read))))
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;; helper function ;;
