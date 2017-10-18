@@ -21,7 +21,10 @@
 (defvar v/spotify-api-authentication-url "https://accounts.spotify.com/api/token")
 (defvar v/spotify-client-id "8084cacc042344ef801c0fd2495b9d14")
 (defvar v/spotify-client-secret "faeb0576b5b9415f864ac86a168fce10")
-(defvar v/spotify-auth-token "BQBIN2xvZWZgLuKd2UFPaB5VU__HTDUWRS83wwgo2IiCtzL3bh7dPTD-z1-_hp3Akp0lK3Huz1_cison-ZF0UWGr-YQbIthroHbCpclLIWrfS7IgnylBJaWra5SWUb-2ly4pidaXSQXVbf9kqo7Z3Q")
+(defvar v/spotify-auth-token nil)
+(defvar v/user-saved-track nil)
+
+(setq v/spotify-auth-token "BQDxFqiLxRGV_9g27VtLD-Vqh8-LCFDlII6MOcXei_GXQWXpI1giU8NJSJlf9yygVH-xm0TcQjv7V8ze81SsbUTW9DXgkzYGvmXSlLta10j6ej4z41xfgllwiHywYiMV225O5eEHbewvBLqC4QEKJA")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; applescript function ;;
@@ -92,6 +95,9 @@
       (goto-char url-http-end-of-headers)
       (json-read))))
 
+
+;; todo: detect error message, if 401 unauthorized, generate a new auth token.
+
 ;;;;;;;;;;;;;;;;;;;;;
 ;; helper function ;;
 ;;;;;;;;;;;;;;;;;;;;;
@@ -123,6 +129,14 @@
     (mapcar (lambda (track) (propertize (v/format-track-output track) 'property track))
             (v/helper-alist-get '(tracks items) (v/search-track search-term)))))
 
+(v/display-formatted-track "look")
+
+(defun v/display-formatted-user-saved-track ()
+  "Format."
+  (mapcar (lambda (item)
+          (let ((track (v/helper-alist-get '(track) item)))
+            (propertize (v/format-track-output track) 'property track)))
+        (v/helper-alist-get '(items) (v/search-user-saved-tracks))))
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;; interface function ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -132,6 +146,13 @@
   (interactive)
   (ivy-read "Search track: " #'v/display-formatted-track
             :dynamic-collection t
+            :action 'v/play-spotify-track))
+
+(defun v/ivy-spotify-search-user-saved-track ()
+  "Ivy frontend."
+  (interactive)
+  (setq v/user-saved-track (v/display-formatted-user-saved-track))
+  (ivy-read "User saved track: " v/user-saved-track
             :action 'v/play-spotify-track))
 
 (provide 'spotify)
